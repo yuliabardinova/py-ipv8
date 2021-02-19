@@ -365,7 +365,7 @@ class Database(metaclass=ABCMeta):
 
     @db_call
     def expand_db(self):
-        #this number is the maximum maximum amount of pages
+        #this number is the "maximum" maximum amount of pages
         added_rows = 2147483646;
         exp_statement = "PRAGMA max_page_count = %s;", added_rows
         self._logger.debug(exp_statement)
