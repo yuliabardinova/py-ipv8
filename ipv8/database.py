@@ -364,6 +364,16 @@ class Database(metaclass=ABCMeta):
         return _thread_safe_result_it(result, fetch_all)
 
     @db_call
+    def expand_db(self):
+        #this number is the "maximum" maximum amount of pages
+        added_rows = 2147483646;
+        exp_statement = "PRAGMA max_page_count = %s;", added_rows
+        self._logger.debug(exp_statement)
+        self._assert(self._cursor is not None,
+                     "Database.close() has been called or Database.open() has not been called")
+        self._cursor.execute(exp_statement)
+
+    @db_call
     def commit(self, exiting=False):
         self._assert(self._cursor is not None,
                      "Database.close() has been called or Database.open() has not been called")
@@ -371,14 +381,20 @@ class Database(metaclass=ABCMeta):
                      "Database.close() has been called or Database.open() has not been called")
         self._assert(not (exiting and self._pending_commits), "No pending commits should be present when exiting")
 
-        if self._pending_commits:
-            self._logger.debug("defer commit [%s]", self._file_path)
-            self._pending_commits += 1
-            return False
+        try:
+            if self._pending_commits:
+                self._logger.debug("defer commit [%s]", self._file_path)
+                self._pending_commits += 1
+                return False
 
-        else:
-            self._logger.debug("commit [%s]", self._file_path)
-            return self._connection.commit()
+            else:
+                self._logger.debug("commit [%s]", self._file_path)
+                return self._connection.commit()
+
+        except sqlite3.OperationalError as e:
+            expand_db()
+            raise DatabaseException("Database or disk is full")
+
 
     @abstractmethod
     def check_database(self, database_version):
