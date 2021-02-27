@@ -393,7 +393,7 @@ class Database(metaclass=ABCMeta):
 
         except sqlite3.OperationalError as e:
             expand_db()
-            raise DatabaseException("Database or disk is full")
+            raise DatabaseException("Error: {e}\nDatabase or disk is full".format(e = e))
 
 
     @abstractmethod
